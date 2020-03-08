@@ -26,7 +26,10 @@ router.post('/create', async (req, res) => {
 
     if (user && pass) {
         if (await icalDao.createUser(user, pass)) {
+            // Output serverside
             console.log('User ' + user + ' created successfully');
+
+            // Return JSON
             res.json({
                 message: 'Success'
             });
@@ -52,10 +55,14 @@ router.post('/login', async (req, res) => {
     console.log(req.body);
 
     if (user && pass){
-        if (await icalDao.auth(user, pass)){
+        token = await icalDao.auth(user, pass);
+        if (token){
+            // Output serverside
             console.log(user + ' logged in');
+            
+            // Return JSON
             res.json({
-                // TODO: Change to token and add to cookie
+                token: token,
                 message: 'Success'
             });
             return;

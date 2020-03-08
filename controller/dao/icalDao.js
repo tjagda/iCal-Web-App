@@ -5,6 +5,7 @@
  * @author Josh Agda
  * @since 0.1
  */
+const uuid = require('uuid');
 const crypto = require('crypto');
 const mariadb = require('mariadb');
 const pool = mariadb.createPool({
@@ -55,18 +56,33 @@ async function createUser(user, pass) {
  */
 async function auth(user, pass) {
     let conn;
+    var token = null;
 
     try {
         conn = await pool.getConnection();
         const hash = crypto.createHash('sha256').update(pass).digest('base64');
-        const res = await conn.query("SELECT * FROM Users WHERE user=? AND password=?", [user, hash]);
+        var res = await conn.query("SELECT * FROM Users WHERE user=? AND password=?", [user, hash]);
 
-        // TODO: Add token creation
-        return res.length;
+        // Add token creation
+        if (res.length) {
+            res = await conn.query("SELECT token, tokenCreated FROM Users WHERE user=?", [user]);
+
+            // Check if token made within last hour
+            lastHourTime = Date.now() - 3600000;
+            if (res[0]['tokenCreated'] > lastHourTime) {
+                token = res[0]['token'];
+            } else {
+                // Make new token
+                token = uuid.v4();
+                res = await conn.query("UPDATE Users SET token=? WHERE user=?", [token, user]);     // Add checks?
+                res = await conn.query("UPDATE Users SET tokenCreated=NOW() WHERE user=?", [user]);
+            }
+        }
     } catch(err) {
         console.log(err);
-        return 0;
     }
+
+    return token;
 }
 
 /**

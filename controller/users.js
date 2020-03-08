@@ -20,14 +20,23 @@ router.use(bodyParser.json());
  * @param {string} user Username to login with
  * @param {string} pass Password for the specified username
  */
-router.post('/create', (req, res) => {
+router.post('/create', async (req, res) => {
     user = req.body['user'];
     pass = req.body['pass'];
 
-    if (user && pass)
-        icalDao.createUser(user, pass);
+    if (user && pass) {
+        if (await icalDao.createUser(user, pass)) {
+            console.log('User ' + user + ' created successfully');
+            res.json({
+                message: 'Success'
+            });
+            return;
+        }
+    }
 
-    res.sendStatus(200);
+    res.json({
+        message: 'User not created'
+    });
 });
 
 /**
@@ -37,19 +46,25 @@ router.post('/create', (req, res) => {
  * @param {string} user Username to login with
  * @param {string} pass Password for the specified username
  */
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
     user = req.body['user'];
     pass = req.body['pass'];
     console.log(req.body);
 
     if (user && pass){
-        if (icalDao.auth(user, pass)){
-            // TODO: Change to token and add to cookie
-            console.log('logged in');
+        if (await icalDao.auth(user, pass)){
+            console.log(user + ' logged in');
+            res.json({
+                // TODO: Change to token and add to cookie
+                message: 'Success'
+            });
+            return;
         }
     }
 
-    res.sendStatus(200);
+    res.json({
+        message: 'Unsuccessful'
+    });
 });
 
 /**
@@ -59,17 +74,22 @@ router.post('/login', (req, res) => {
  * @param {string} user Username to login with
  * @param {string} pass New password for the specified username
  */
-router.post('/resetPass', (req, res) => {
+router.post('/resetPass', async (req, res) => {
     user = req.body['user'];
     pass = req.body['pass'];
 
     if (user){
-        icalDao.resetPass(user, pass);
-        // TODO: Check output
+        if (await icalDao.resetPass(user, pass)) {
+            res.json({
+                message: 'Success'
+            });
+            return;
+        }
     }
 
-    // TODO: Add message
-    res.sendStatus(200);
+    res.json({
+        message: 'Unsuccessful'
+    });
 });
 
 module.exports = router;

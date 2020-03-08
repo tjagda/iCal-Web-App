@@ -18,7 +18,7 @@ router.use(bodyParser.json());
  * 
  * @since 0.1
  */
-router.get('/get', (req, res) => {
+router.get('/get', async (req, res) => {
     // TODO:
     res.json({
         message: 'Getting ics calendar!'
@@ -28,7 +28,7 @@ router.get('/get', (req, res) => {
 /**
  * Summary. Saves the ics file into database
  */
-router.post('/store', (req, res) => {
+router.post('/store', async (req, res) => {
     // TODO:
     res.json({
         message: 'Storing ics calendar!'

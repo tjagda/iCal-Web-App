@@ -5,6 +5,7 @@
  * @author Josh Agda
  * @since 0.1
  */
+const crypto = require('crypto');
 const mariadb = require('mariadb');
 const pool = mariadb.createPool({
      host: 'localhost', 
@@ -30,13 +31,16 @@ async function createUser(user, pass) {
         console.log(pass);
 
         // Check if unique user
-        const res = await conn.query("SELECT * FROM Users WHERE user=?", [user]);
+        var res = await conn.query("SELECT * FROM Users WHERE user=?", [user]);
         if (res.length > 0)
             return 0;
         
-        // TODO: Add password hashing
-        const res = await conn.query("INSERT INTO Users (user, password) VALUES (?, ?)", [user, pass]);
-        console.log(res);
+        // Add password hashing
+        const hash = crypto.createHash('sha256').update(pass).digest('base64');
+
+        // Insert into DB
+        res = await conn.query("INSERT INTO Users (user, password) VALUES (?, ?)", [user, hash]);
+        return res['affectedRows'];
     } catch(err) {
         console.log(err);
         return 0;
@@ -54,8 +58,9 @@ async function auth(user, pass) {
 
     try {
         conn = await pool.getConnection();
-        // TODO: Add password hashing
-        const res = await conn.query("SELECT * FROM Users WHERE user=? AND password=?", [user, pass]);
+        const hash = crypto.createHash('sha256').update(pass).digest('base64');
+        const res = await conn.query("SELECT * FROM Users WHERE user=? AND password=?", [user, hash]);
+
         // TODO: Add token creation
         return res.length;
     } catch(err) {
@@ -75,13 +80,15 @@ async function resetPass(user, pass) {
 
     try {
         conn = await pool.getConnection();
-        // TODO: Add password hashing
-        const res = await conn.query("UPDATE Users SET password=? WHERE user=?", [pass, user]);
-        // TODO: Check return
-        return res.length;
+
+        const hash = crypto.createHash('sha256').update(pass).digest('base64');
+        const res = await conn.query("UPDATE Users SET password=? WHERE user=?", [hash, user]);
+
+        // Return affected rows (0 => error)
+        return res['affectedRows'];
     } catch(err) {
         console.log(err);
-        return null;
+        return 0;
     }
 }
 

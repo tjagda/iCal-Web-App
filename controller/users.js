@@ -21,8 +21,8 @@ router.use(bodyParser.json());
  * @param {string} pass Password for the specified username
  */
 router.post('/create', async (req, res) => {
-    user = req.body['user'];
-    pass = req.body['pass'];
+    var user = req.body['user'];
+    var pass = req.body['pass'];
 
     if (user && pass) {
         if (await icalDao.createUser(user, pass)) {
@@ -31,14 +31,14 @@ router.post('/create', async (req, res) => {
 
             // Return JSON
             res.json({
-                message: 'Success'
+                success: true
             });
             return;
         }
     }
 
     res.json({
-        message: 'User not created'
+        success: false
     });
 });
 
@@ -50,9 +50,8 @@ router.post('/create', async (req, res) => {
  * @param {string} pass Password for the specified username
  */
 router.post('/login', async (req, res) => {
-    user = req.body['user'];
-    pass = req.body['pass'];
-    console.log(req.body);
+    var user = req.body['user'];
+    var pass = req.body['pass'];
 
     if (user && pass){
         token = await icalDao.auth(user, pass);
@@ -63,14 +62,14 @@ router.post('/login', async (req, res) => {
             // Return JSON
             res.json({
                 token: token,
-                message: 'Success'
+                success: true
             });
             return;
         }
     }
 
     res.json({
-        message: 'Unsuccessful'
+        success: false
     });
 });
 
@@ -82,20 +81,22 @@ router.post('/login', async (req, res) => {
  * @param {string} pass New password for the specified username
  */
 router.post('/resetPass', async (req, res) => {
-    user = req.body['user'];
-    pass = req.body['pass'];
+    var user = req.body['user'];
+    var pass = req.body['pass'];
 
+    // TODO: Change reset pass to use a reset password token 
+    // to be more secure (another DB table)
     if (user){
         if (await icalDao.resetPass(user, pass)) {
             res.json({
-                message: 'Success'
+                success: true
             });
             return;
         }
     }
 
     res.json({
-        message: 'Unsuccessful'
+        success: false
     });
 });
 

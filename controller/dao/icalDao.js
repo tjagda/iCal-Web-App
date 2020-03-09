@@ -16,6 +16,8 @@ const pool = mariadb.createPool({
      connectionLimit: 5
 });
 
+const calPath = __dirname + '/../../cal/';
+
 /**
  * Summary. Creates a new user in database
  * 
@@ -69,10 +71,10 @@ async function auth(user, pass) {
 
             // Check if token made within last hour
             lastHourTime = Date.now() - 3600000;
-            if (res[0]['tokenCreated'] > lastHourTime) {
-                token = res[0]['token'];
+            if (res[0]['tokenCreated'] && res[0]['tokenCreated'] > lastHourTime) {
+                token = res[0]['token'];    // Set token from a previously made one
             } else {
-                // Make new token
+                // Make new token and update DB
                 token = uuid.v4();
                 res = await conn.query("UPDATE Users SET token=? WHERE user=?", [token, user]);     // Add checks?
                 res = await conn.query("UPDATE Users SET tokenCreated=NOW() WHERE user=?", [user]);
@@ -110,13 +112,52 @@ async function resetPass(user, pass) {
 
 
 // TODO: Add get calendar
+async function getCal(user) {
+
+}
 
 
-// TODO: Add save calendar
+/**
+ * Summary. Stores the iCal file object and saves the path on DB
+ * 
+ * @param {string} user Username of user uploading iCal file
+ * @param {object} cal iCal file object
+ */
+async function saveCal(user, cal) {
+    let conn;
+    
+    try {
+        conn = await pool.getConnection();
+
+        // Save it based on DB id
+        var res = await conn.query("SELECT id FROM Users WHERE user=?", [user]);
+        if (!res.length)
+            return 0;
+
+        id = res[0]['id'];
+        fileName = id + '.ics';
+        cal.mv(calPath + fileName, (err) => {
+            if (err) {
+                throw err;
+            } else {
+                console.log(fileName + ' is uploaded for ' + user);
+            }
+        });
+
+        // Save path on DB
+        res = await conn.query("UPDATE Users SET calendarPath=? WHERE user=?", [fileName, user]);
+        return res['affectedRows'];
+    } catch(err) {
+        console.log(err);
+        return 0;
+    }
+}
 
 
 module.exports = {
     createUser: createUser,
     auth: auth,
-    resetPass: resetPass
+    resetPass: resetPass,
+    getCal: getCal,
+    saveCal: saveCal
 };

@@ -21,10 +21,18 @@ router.use(fileUpload());
  * @since 0.1
  */
 router.get('/get', async (req, res) => {
-    // TODO:
-    res.json({
-        message: 'Getting ics calendar!'
-    });
+    var user = req.query.user;
+
+    if (user) {
+        calPath = await icalDao.getCal(user);
+        if (calPath) {
+            res.download(calPath);
+            return;
+        }
+    }
+
+    res.statusCode(404);
+    return;
 });
 
 /**

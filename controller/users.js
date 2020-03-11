@@ -54,7 +54,7 @@ router.post('/login', async (req, res) => {
     var pass = req.body['pass'];
 
     if (user && pass){
-        token = await icalDao.auth(user, pass);
+        var token = await icalDao.auth(user, pass);
         if (token){
             // Output serverside
             console.log(user + ' logged in');

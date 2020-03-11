@@ -113,7 +113,24 @@ async function resetPass(user, pass) {
 
 // TODO: Add get calendar
 async function getCal(user) {
+    let conn;
+    
+    try {
+        conn = await pool.getConnection();
 
+        // Get the file name
+        var res = await conn.query("SELECT calendarPath FROM Users WHERE user=?", [user]);
+        if (!res.length)
+            return null;
+        fileName = res[0]['calendarPath'];
+
+        return calPath + fileName;
+    } catch(err) {
+        console.log(err);
+        return null;
+    }
+    // TODO: Create stream
+    // TODO: Return stream
 }
 
 

@@ -21,17 +21,17 @@ router.use(fileUpload());
  * @since 0.1
  */
 router.get('/get', async (req, res) => {
-    var user = req.query.user;
+    var token = req.query.token;
 
-    if (user) {
-        calPath = await icalDao.getCal(user);
+    if (token) {
+        calPath = await icalDao.getCal(token);
         if (calPath) {
             res.download(calPath);
             return;
         }
     }
 
-    res.statusCode(404);
+    res.send(404);
     return;
 });
 
@@ -41,11 +41,11 @@ router.get('/get', async (req, res) => {
  * @since 0.1
  */
 router.post('/store', async (req, res) => {
-    var user = req.body['user'];
+    var token = req.body['token'];
     var cal = req.files ? req.files.cal : null;
 
-    if (user && cal) {
-        if (await icalDao.saveCal(user, cal)) {
+    if (token && cal) {
+        if (await icalDao.saveCal(token, cal)) {
             res.json({
                 success: true
             });

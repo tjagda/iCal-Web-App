@@ -60,6 +60,7 @@ router.post('/login', async (req, res) => {
             console.log(user + ' logged in');
             
             // Return JSON
+            // TODO: create cookie?
             res.json({
                 token: token,
                 success: true

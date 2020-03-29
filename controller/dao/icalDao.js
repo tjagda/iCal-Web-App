@@ -112,25 +112,25 @@ async function resetPass(user, pass) {
 
 
 // TODO: Add get calendar
-async function getCal(user) {
+async function getCal(token) {
     let conn;
     
     try {
         conn = await pool.getConnection();
 
         // Get the file name
-        var res = await conn.query("SELECT calendarPath FROM Users WHERE user=?", [user]);
-        if (!res.length)
-            return null;
-        fileName = res[0]['calendarPath'];
+        var res = await conn.query("SELECT calendarPath, tokenCreated FROM Users WHERE token=?", [token]);
+        // var res = await conn.query("SELECT calendarPath FROM Users WHERE user=?", [user]);
 
-        return calPath + fileName;
+        lastHourTime = Date.now() - 3600000;
+        if (res.length && res[0]['tokenCreated'] && res[0]['tokenCreated'] > lastHourTime) {
+            fileName = res[0]['calendarPath'];
+            return calPath + fileName;
+        }
     } catch(err) {
         console.log(err);
-        return null;
     }
-    // TODO: Create stream
-    // TODO: Return stream
+    return null;
 }
 
 
@@ -140,34 +140,36 @@ async function getCal(user) {
  * @param {string} user Username of user uploading iCal file
  * @param {object} cal iCal file object
  */
-async function saveCal(user, cal) {
+async function saveCal(token, cal) {
     let conn;
     
     try {
         conn = await pool.getConnection();
 
         // Save it based on DB id
-        var res = await conn.query("SELECT id FROM Users WHERE user=?", [user]);
-        if (!res.length)
-            return 0;
+        var res = await conn.query("SELECT id FROM Users WHERE token=?", [token]);
 
-        id = res[0]['id'];
-        fileName = id + '.ics';
-        cal.mv(calPath + fileName, (err) => {
-            if (err) {
-                throw err;
-            } else {
-                console.log(fileName + ' is uploaded for ' + user);
-            }
-        });
-
-        // Save path on DB
-        res = await conn.query("UPDATE Users SET calendarPath=? WHERE user=?", [fileName, user]);
-        return res['affectedRows'];
+        lastHourTime = Date.now() - 3600000;
+        if (res.length && res[0]['tokenCreated'] && res[0]['tokenCreated'] > lastHourTime) {
+            id = res[0]['id'];
+            fileName = id + '.ics';
+            cal.mv(calPath + fileName, (err) => {
+                if (err) {
+                    throw err;
+                } else {
+                    console.log(fileName + ' is uploaded for ' + user);
+                }
+            });
+    
+            // Save path on DB
+            res = await conn.query("UPDATE Users SET calendarPath=? WHERE user=?", [fileName, user]);
+            return res['affectedRows'];
+        }
     } catch(err) {
         console.log(err);
-        return 0;
     }
+
+    return 0;
 }
 
 

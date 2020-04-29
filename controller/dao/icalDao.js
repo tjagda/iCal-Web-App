@@ -8,13 +8,12 @@
 const uuid = require('uuid');
 const crypto = require('crypto');
 const mariadb = require('mariadb');
-const pool = mariadb.createPool({
+const connectOpt = {
      host: 'localhost', 
      user:'tagda', 
      password: '',
-     database: 'iCal',
-     connectionLimit: 5
-});
+     database: 'iCal'
+};
 
 const calPath = __dirname + '/../../cal/';
 
@@ -29,7 +28,7 @@ async function createUser(user, pass) {
     let conn;
 
     try {
-        conn = await pool.getConnection();
+        conn = await mariadb.createConnection(connectOpt);
         console.log(user);
         console.log(pass);
 
@@ -43,6 +42,8 @@ async function createUser(user, pass) {
 
         // Insert into DB
         res = await conn.query("INSERT INTO Users (user, password) VALUES (?, ?)", [user, hash]);
+        conn.end();
+
         return res['affectedRows'];
     } catch(err) {
         console.log(err);
@@ -61,9 +62,9 @@ async function auth(user, pass) {
     var token = null;
 
     try {
-        conn = await pool.getConnection();
+        conn = await mariadb.createConnection(connectOpt);
         const hash = crypto.createHash('sha256').update(pass).digest('base64');
-        var res = await conn.query("SELECT * FROM Users WHERE user=? AND password=?", [user, hash]);
+        let res = await conn.query("SELECT * FROM Users WHERE user=? AND password=?", [user, hash]);
 
         // Add token creation
         if (res.length) {
@@ -80,6 +81,8 @@ async function auth(user, pass) {
                 res = await conn.query("UPDATE Users SET tokenCreated=NOW() WHERE user=?", [user]);
             }
         }
+
+        conn.end();
     } catch(err) {
         console.log(err);
     }
@@ -97,10 +100,11 @@ async function resetPass(user, pass) {
     let conn;
 
     try {
-        conn = await pool.getConnection();
+        conn = await mariadb.createConnection(connectOpt);
 
         const hash = crypto.createHash('sha256').update(pass).digest('base64');
-        const res = await conn.query("UPDATE Users SET password=? WHERE user=?", [hash, user]);
+        let res = await conn.query("UPDATE Users SET password=? WHERE user=?", [hash, user]);
+        conn.end();
 
         // Return affected rows (0 => error)
         return res['affectedRows'];
@@ -111,16 +115,20 @@ async function resetPass(user, pass) {
 }
 
 
-// TODO: Add get calendar
+/**
+ * Summary. Get calendar using the token generated on user auth
+ * 
+ * @param {string} token User token to find calendar with
+ */
 async function getCal(token) {
     let conn;
     
     try {
-        conn = await pool.getConnection();
+        conn = await mariadb.createConnection(connectOpt);
 
         // Get the file name
-        var res = await conn.query("SELECT calendarPath, tokenCreated FROM Users WHERE token=?", [token]);
-        // var res = await conn.query("SELECT calendarPath FROM Users WHERE user=?", [user]);
+        let res = await conn.query("SELECT calendarPath, tokenCreated FROM Users WHERE token=?", [token]);
+        conn.end();
 
         lastHourTime = Date.now() - 3600000;
         if (res.length && res[0]['tokenCreated'] && res[0]['tokenCreated'] > lastHourTime) {
@@ -142,12 +150,13 @@ async function getCal(token) {
  */
 async function saveCal(token, cal) {
     let conn;
+    let res = null;
     
     try {
-        conn = await pool.getConnection();
+        conn = await mariadb.createConnection(connectOpt);
 
         // Save it based on DB id
-        var res = await conn.query("SELECT id FROM Users WHERE token=?", [token]);
+        res = await conn.query("SELECT id FROM Users WHERE token=?", [token]);
 
         lastHourTime = Date.now() - 3600000;
         if (res.length && res[0]['tokenCreated'] && res[0]['tokenCreated'] > lastHourTime) {
@@ -163,12 +172,15 @@ async function saveCal(token, cal) {
     
             // Save path on DB
             res = await conn.query("UPDATE Users SET calendarPath=? WHERE user=?", [fileName, user]);
-            return res['affectedRows'];
         }
+        conn.end()
     } catch(err) {
         console.log(err);
     }
 
+    if (res) {
+        return res['affectedRows'];
+    }
     return 0;
 }
 

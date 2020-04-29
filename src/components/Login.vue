@@ -55,16 +55,32 @@ export default {
     onSubmit(evt) {
       evt.preventDefault()
 
+      let token = '';
+
       // Post to login api
       let params = {
         user: this.form.user,
         pass: this.form.pass
       }
+
+      // Get token from auth endpoint
       axios.post('http://localhost:4000/users/login', params)
       .then(res => {
-        // TODO: Save uuid
-        // TODO: Load calendar
-        console.log(res.data);
+        if (res) {
+          if (res.data.success) {
+            token = res.data.token;
+
+            // Get calendar using token
+            return axios.get('http://localhost:4000/cal/get?token=' + token);
+          }
+        }
+        return null;
+      }).then(res => {
+        // If there was a response from second axios or no failure from first
+        if (res) {
+          // Send both token and calendar to parent (App.vue)
+          this.$emit("userCal", token, res.data);
+        }
       });
     },
   }

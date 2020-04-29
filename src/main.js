@@ -5,6 +5,7 @@ import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 
 import Home from './components/Home'
 import Login from './components/Login'
+import Calendar from './components/Calendar'
 
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
@@ -21,6 +22,7 @@ const router = new VueRouter({
   routes: [
     { path: '/', component: Home },
     { path: '/login', component: Login },
+    { path: '/calendar', component: Calendar },
   ],
   mode: 'history'
 })

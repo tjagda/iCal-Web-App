@@ -1,12 +1,19 @@
 <template>
   <transition>
-    <h1>iCal Editor</h1>
+    <div class="container">
+      <div class="row">
+        <div class="col-md">
+          <h1>iCal Editor</h1>
+          <h4>by Josh Agda</h4>
+        </div>
+      </div>
+    </div>
   </transition>
 </template>
 
 <script>
 export default {
-  name: 'HelloWorld',
+  name: 'Home',
   props: {
     msg: String
   }
